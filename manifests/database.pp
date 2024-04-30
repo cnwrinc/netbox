@@ -26,8 +26,7 @@ class netbox::database (
   String $database_password,
   String $database_encoding,
   String $database_locale,
-){
-
+) {
   class { 'postgresql::globals':
     encoding => $database_encoding,
     locale   => $database_locale,
@@ -37,7 +36,7 @@ class netbox::database (
 
   postgresql::server::db { $database_name:
     user     => $database_user,
-    password => postgresql_password($database_name, $database_password),
+    password => postgresql::postgresql_password($database_name, $database_password),
   }
 
   postgresql::server::database_grant { 'user_ALL_on_database':
