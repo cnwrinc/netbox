@@ -78,16 +78,15 @@ class netbox::install (
   Stdlib::Absolutepath $python_dependency_path,
   Enum['tarball', 'git_clone'] $install_method = 'tarball',
 ) {
-
   $packages =[
     gcc,
-    python36,
-    python36-devel,
+    python39,
+    python39-devel,
     libxml2-devel,
     libxslt-devel,
     libffi-devel,
     openssl-devel,
-    redhat-rpm-config
+    redhat-rpm-config,
   ]
 
   $local_tarball = "${download_tmp_dir}/netbox-${version}.tar.gz"
@@ -122,29 +121,29 @@ class netbox::install (
   }
 
   archive { $local_tarball:
-      source        => $download_url,
-      checksum      => $download_checksum,
-      checksum_type => $download_checksum_type,
-      extract       => true,
-      extract_path  => $install_root,
-      creates       => $software_directory_with_version,
-      cleanup       => true,
-      notify        => Exec['install python requirements'],
-    }
+    source        => $download_url,
+    checksum      => $download_checksum,
+    checksum_type => $download_checksum_type,
+    extract       => true,
+    extract_path  => $install_root,
+    creates       => $software_directory_with_version,
+    cleanup       => true,
+    notify        => Exec['install python requirements'],
+  }
 
-    exec { 'netbox permission':
-      command     => "chown -R ${user}:${group} ${software_directory_with_version}",
-      path        => ['/usr/bin'],
-      subscribe   => Archive[$local_tarball],
-      refreshonly => true,
-    }
+  exec { 'netbox permission':
+    command     => "chown -R ${user}:${group} ${software_directory_with_version}",
+    path        => ['/usr/bin'],
+    subscribe   => Archive[$local_tarball],
+    refreshonly => true,
+  }
 
   file { $software_directory:
     ensure => 'link',
     target => $software_directory_with_version,
   }
   file { 'local_requirements':
-    ensure => 'present',
+    ensure => file,
     path   => "${software_directory}/local_requirements.txt",
     owner  => $user,
     group  => $group,
@@ -186,7 +185,7 @@ class netbox::install (
   }
   ~>exec { 'install python requirements':
     cwd         => $software_directory,
-    path        => [ "${venv_dir}/bin", '/usr/bin', '/usr/sbin' ],
+    path        => ["${venv_dir}/bin", '/usr/bin', '/usr/sbin'],
     environment => ["VIRTUAL_ENV=${venv_dir}"],
     provider    => shell,
     user        => $user,
@@ -196,7 +195,7 @@ class netbox::install (
   }
   ~>exec { 'install local python requirements':
     cwd         => $software_directory,
-    path        => [ "${venv_dir}/bin", '/usr/bin', '/usr/sbin' ],
+    path        => ["${venv_dir}/bin", '/usr/bin', '/usr/sbin'],
     environment => ["VIRTUAL_ENV=${venv_dir}"],
     provider    => shell,
     user        => $user,

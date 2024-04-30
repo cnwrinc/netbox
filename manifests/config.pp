@@ -2,6 +2,9 @@
 #
 # Configures Netbox and gunicorn, and load the database schema.
 #
+# @param version
+#   Set the version of Netbox
+#
 # @param user
 #   The user owning the Netbox installation files, and running the
 #   service.
@@ -135,6 +138,7 @@
 # @example
 #   include netbox::config
 class netbox::config (
+  String $version,
   String $user,
   String $group,
   Stdlib::Absolutepath $install_root,
@@ -195,37 +199,38 @@ class netbox::config (
 
   file { $config_file:
     content      => epp('netbox/configuration.py.epp', {
-      'allowed_hosts'           => $allowed_hosts,
-      'database_name'           => $database_name,
-      'database_user'           => $database_user,
-      'database_password'       => $database_password,
-      'database_host'           => $database_host,
-      'database_port'           => $database_port,
-      'database_conn_max_age'   => $database_conn_max_age,
-      'redis_options'           => $redis_options,
-      'email_options'           => $email_options,
-      'secret_key'              => $secret_key,
-      'admins'                  => $admins,
-      'banner_top'              => $banner_top,
-      'banner_bottom'           => $banner_bottom,
-      'banner_login'            => $banner_login,
-      'base_path'               => $base_path,
-      'debug'                   => $debug,
-      'enforce_global_unique'   => $enforce_global_unique,
-      'exempt_view_permissions' => $exempt_view_permissions,
-      'login_required'          => $login_required,
-      'metrics_enabled'         => $metrics_enabled,
-      'prefer_ipv4'             => $prefer_ipv4,
-      'napalm_username'         => $napalm_username,
-      'napalm_password'         => $napalm_password,
-      'napalm_timeout'          => $napalm_timeout,
-      'time_zone'               => $time_zone,
-      'date_format'             => $date_format,
-      'short_date_format'       => $short_date_format,
-      'time_format'             => $time_format,
-      'short_time_format'       => $short_time_format,
-      'datetime_format'         => $datetime_format,
-      'short_datetime_format'   => $short_datetime_format,
+        'version'                 => $version,
+        'allowed_hosts'           => $allowed_hosts,
+        'database_name'           => $database_name,
+        'database_user'           => $database_user,
+        'database_password'       => $database_password,
+        'database_host'           => $database_host,
+        'database_port'           => $database_port,
+        'database_conn_max_age'   => $database_conn_max_age,
+        'redis_options'           => $redis_options,
+        'email_options'           => $email_options,
+        'secret_key'              => $secret_key,
+        'admins'                  => $admins,
+        'banner_top'              => $banner_top,
+        'banner_bottom'           => $banner_bottom,
+        'banner_login'            => $banner_login,
+        'base_path'               => $base_path,
+        'debug'                   => $debug,
+        'enforce_global_unique'   => $enforce_global_unique,
+        'exempt_view_permissions' => $exempt_view_permissions,
+        'login_required'          => $login_required,
+        'metrics_enabled'         => $metrics_enabled,
+        'prefer_ipv4'             => $prefer_ipv4,
+        'napalm_username'         => $napalm_username,
+        'napalm_password'         => $napalm_password,
+        'napalm_timeout'          => $napalm_timeout,
+        'time_zone'               => $time_zone,
+        'date_format'             => $date_format,
+        'short_date_format'       => $short_date_format,
+        'time_format'             => $time_format,
+        'short_time_format'       => $short_time_format,
+        'datetime_format'         => $datetime_format,
+        'short_datetime_format'   => $short_datetime_format,
     }),
     owner        => $user,
     group        => $group,
@@ -242,6 +247,14 @@ class netbox::config (
     user        => $user,
   }
 
+  file { 'static_folder':
+    ensure => 'directory',
+    path   => "${software_directory}/netbox/static",
+    owner  => $user,
+    group  => $group,
+    mode   => '0644',
+  }
+
   exec { 'database migration':
     onlyif  => "${venv_dir}/bin/python3 netbox/manage.py showmigrations | grep '\[ \]'",
     command => "${venv_dir}/bin/python3 netbox/manage.py migrate --no-input",
@@ -250,7 +263,7 @@ class netbox::config (
   }
   exec { 'collect static files':
     command     => "${venv_dir}/bin/python3 netbox/manage.py collectstatic --no-input",
-    require     => File[$config_file],
+    require     => [File[$config_file], File['static_folder']],
     refreshonly => true,
   }
 }
