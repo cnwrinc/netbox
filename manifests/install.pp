@@ -177,7 +177,7 @@ class netbox::install (
   }
 
   exec { "python_venv_${venv_dir}":
-    command => "/usr/bin/python3 -m venv ${venv_dir}",
+    command => "/usr/bin/python3.9 -m venv ${venv_dir}",
     user    => $user,
     creates => "${venv_dir}/bin/activate",
     cwd     => '/tmp',
